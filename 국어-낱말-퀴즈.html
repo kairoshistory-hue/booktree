@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>국어 낱말 퀴즈</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: one ruled index card on a cool desk; the example sentence is the question, the blue word becomes a blank */
+:root{
+  --desk:#e7ebf0; --card:#fbfcfd; --ink:#1d2b4f; --muted:#64708a; --rule:#d3dbe8;
+  --margin:#e3a0a6; --blue:#2754c5; --blue-bg:#e6edfb; --tag:#c9773a;
+  --good:#1f8a5b; --good-bg:#e1f4ea; --bad:#c2413b; --bad-bg:#fbe6e4; --line:#c9d1de; --shade:#edf1f7;
+  --f-display:"Gowun Batang","Nanum Myeongjo","AppleMyungjo","Batang",serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#10151f; --card:#1a2130; --ink:#e4e9f4; --muted:#93a0b8; --rule:#2a3446;
+  --margin:#7a3f47; --blue:#8fb0ff; --blue-bg:#1e2a48; --tag:#e3a06a;
+  --good:#5fd39b; --good-bg:#143326; --bad:#f08a82; --bad-bg:#3a1c1b; --line:#334058; --shade:#232c3f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#10151f; --card:#1a2130; --ink:#e4e9f4; --muted:#93a0b8; --rule:#2a3446;
+  --margin:#7a3f47; --blue:#8fb0ff; --blue-bg:#1e2a48; --tag:#e3a06a;
+  --good:#5fd39b; --good-bg:#143326; --bad:#f08a82; --bad-bg:#3a1c1b; --line:#334058; --shade:#232c3f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--desk);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:640px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:1.8rem;margin:0;text-wrap:balance}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cats button{display:grid;gap:2px;justify-items:start;text-align:left;background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;font-family:var(--f-body);transition:border-color .15s,background .15s}
+.cats button b{font-size:.98rem;color:var(--ink);word-break:keep-all;display:flex;gap:6px;align-items:center}
+.cats button span{font:500 .75rem var(--f-body);font-variant-numeric:tabular-nums;word-break:keep-all}
+.cats button span.done{color:var(--good)}
+.cats button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-bg);box-shadow:inset 0 0 0 1px var(--blue)}
+.cats button:focus-visible,.units button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.units{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.units button{display:grid;gap:1px;justify-items:center;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 4px;cursor:pointer;font-family:var(--f-body);transition:border-color .15s}
+.units button:hover{border-color:var(--blue)}
+.units button[aria-pressed="true"]{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.units b{font-size:1rem}
+.units small{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.units .st{font-style:normal;font-size:.72rem;font-weight:700;margin-top:3px;padding:1px 7px;border-radius:999px;background:var(--shade);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.units .st.done{background:var(--good-bg);color:var(--good)}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+.seg button{border:0;background:none;color:var(--muted);font:500 .85rem var(--f-body);padding:6px 13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.seg button:focus-visible,.btn:focus-visible,.choices button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.card{position:relative;background:var(--card);border-radius:6px;box-shadow:0 1px 0 var(--line),0 10px 30px -18px rgba(20,30,60,.45);
+  padding:24px}
+@media (max-width:440px){.card{padding:20px 18px}}
+.meta{display:flex;justify-content:space-between;font:500 .78rem var(--f-mono);color:var(--muted);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.bar{height:4px;background:var(--rule);border-radius:2px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue);width:0;transition:width .3s}
+.qbox{margin:20px 0 18px;background:var(--shade);border-radius:10px;padding:18px 20px}
+@media (max-width:440px){.qbox{padding:16px}}
+.tag{display:inline-block;margin-top:0;background:var(--tag);color:var(--card);font:700 .75rem var(--f-body);padding:2px 10px;border-radius:4px;letter-spacing:.04em}
+.sentence{margin:12px 0 8px;font-family:var(--f-body);font-weight:500;letter-spacing:-.01em;font-size:clamp(1.15rem,4.4vw,1.4rem);line-height:1.8;word-break:keep-all;overflow-wrap:anywhere}
+.blank{display:inline-block;min-width:4.5em;border-bottom:2px solid var(--blue);color:var(--blue);text-align:center;padding:0 4px;line-height:1.3}
+.blank.filled{background:var(--blue-bg);border-radius:4px 4px 0 0;font-weight:700}
+.hintrow{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:0}
+.hintbtn{border:0;background:none;color:var(--blue);font:500 .85rem var(--f-body);padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.hint{color:var(--muted);font-size:.92rem;word-break:keep-all}
+.choices{display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.choices button{width:100%;display:flex;gap:12px;align-items:center;text-align:left;background:var(--card);color:var(--ink);
+  border:1px solid var(--line);border-radius:8px;padding:12px 14px;font:500 1.05rem/1.4 var(--f-body);letter-spacing:-.01em;cursor:pointer;transition:border-color .15s}
+.choices button:hover:not(:disabled){border-color:var(--blue)}
+.choices kbd{font:500 .75rem var(--f-mono);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px;flex:none}
+.choices button.right{border-color:var(--good);background:var(--good-bg);color:var(--good)}
+.choices button.wrong{border-color:var(--bad);background:var(--bad-bg);color:var(--bad);text-decoration:line-through}
+.choices button:disabled{cursor:default}
+.typing{display:flex;gap:8px;flex-wrap:wrap}
+.typing input{flex:1 1 200px;min-width:0;font:500 1.05rem var(--f-body);color:var(--ink);background:var(--desk);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.typing input.right{border-color:var(--good);background:var(--good-bg)}
+.typing input.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;min-height:42px;flex-wrap:wrap}
+.feedback{font-weight:700;word-break:keep-all}
+.feedback.ok{color:var(--good)} .feedback.no{color:var(--bad)}
+.feedback small{display:block;font-weight:500;color:var(--muted)}
+.btn{border:0;border-radius:8px;background:var(--ink);color:var(--card);font:700 .95rem var(--f-body);padding:10px 18px;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.result h2{font-family:var(--f-display);font-size:3.2rem;margin:18px 0 0;font-variant-numeric:tabular-nums}
+.result>p{margin:4px 0 16px;color:var(--muted)}
+.review{list-style:none;padding:0;margin:0 0 18px;display:grid;gap:10px}
+.review li{border-bottom:1px dashed var(--line);padding-bottom:8px;word-break:keep-all}
+.review b{font-family:var(--f-display);color:var(--blue)}
+.review div{font-size:.88rem;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--muted);font-size:.85rem;margin:8px 0}
+details code{font-family:var(--f-mono);background:var(--desk);padding:1px 5px;border-radius:4px;color:var(--ink)}
+textarea{width:100%;min-height:260px;font:500 .82rem/1.7 var(--f-mono);color:var(--ink);background:var(--desk);border:1px solid var(--line);border-radius:6px;padding:10px;resize:vertical;white-space:pre;overflow-x:auto}
+.msg{font-size:.85rem;color:var(--muted)} .msg.err{color:var(--bad)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>국어 낱말 퀴즈</h1>
+    <div class="cats" role="group" aria-label="출제 범위">
+      <button id="k-word" aria-pressed="true"><b>어휘</b><span id="k-word-n"></span></button>
+      <button id="k-phrase" aria-pressed="false"><b>속담·관용어</b><span id="k-phrase-n"></span></button>
+      <button id="k-four" aria-pressed="false"><b>사자성어</b><span id="k-four-n"></span></button>
+    </div>
+    <div class="units" id="units" role="group" aria-label="어휘 회차"></div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="문제 형식">
+        <button id="t-mc" aria-pressed="true">객관식</button>
+        <button id="t-sa" aria-pressed="false">주관식</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="card" id="quiz" aria-live="polite">
+    <div class="meta"><span id="count">1 / 10</span><span id="score">정답 0</span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="qbox">
+      <span class="tag" id="tag">어휘</span>
+      <p class="sentence" id="sentence"></p>
+      <div class="hintrow">
+        <button class="hintbtn" id="hintbtn">뜻 보기</button>
+        <span class="hint" id="hint" hidden></span>
+      </div>
+    </div>
+    <ol class="choices" id="choices"></ol>
+    <form class="typing" id="typing" hidden>
+      <input id="answer" autocomplete="off" placeholder="빈칸에 들어갈 말" aria-label="빈칸에 들어갈 말">
+      <button class="btn" id="check" type="submit">확인</button>
+    </form>
+    <div class="foot">
+      <span class="feedback" id="feedback"></span>
+      <button class="btn" id="next" hidden>다음 →</button>
+    </div>
+  </section>
+
+  <section class="card result" id="result" hidden>
+    <div class="meta"><span>결과</span><span id="r-mode"></span></div>
+    <h2 id="r-score">0 / 0</h2>
+    <p id="r-text"></p>
+    <ul class="review" id="r-list"></ul>
+    <div class="row">
+      <button class="btn" id="retry-wrong">틀린 것만 다시</button>
+      <button class="btn ghost" id="restart">이 회차 다시</button>
+      <button class="btn ghost" id="next-unit" hidden>다음 회차 →</button>
+    </div>
+  </section>
+
+  <details id="editor">
+    <summary>문제 목록 편집</summary>
+    <p>한 줄에 하나씩 <code>구분 | 낱말 | 뜻 | 예문</code> 형식으로 적어요. 예문에서 빈칸으로 만들 부분을 <code>[ ]</code>로 감싸 주세요. 구분은 낱말·속담·관용어·사자성어 중 하나예요. 어휘는 목록 순서대로 20문제씩 회차로 나뉘어요. 목록과 응시 기록은 이 브라우저에 저장됩니다.</p>
+    <textarea id="words" spellcheck="false" aria-label="문제 목록"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="save">저장하고 새로 시작</button>
+      <button class="btn ghost" id="reset">교재 내용으로 되돌리기</button>
+      <button class="btn ghost" id="clear-status">응시 기록 지우기</button>
+      <span class="msg" id="msg"></span>
+    </div>
+  </details>
+</div>
+
+<script>
+const SAMPLE = `낱말 | 공학 | 공업의 이론, 기술, 생산 따위를 체계적으로 연구하는 학문 | 그 의자는 인체[공학]적인 설계를 통해 만들어졌다.
+낱말 | 판서 | 고려 말기, 육조의 으뜸 벼슬 중 하나 | 홍길동의 아버지 홍 [판서]는 재주가 있는 홍길동이 뜻을 펴지 못함을 동정했다.
+낱말 | 원자재 | 공업 생산의 원료가 되는 자재 | [원자재]의 가격이 오르면 자연히 생산품의 가격도 오른다.
+낱말 | 발광 | 빛을 냄 | 반딧불이의 [발광]은 짝짓기를 수월하게 하기 위한 도구와 같다.
+낱말 | 비범하다 | 보통 수준보다 훨씬 뛰어나다 | 최치원은 어려서부터 [비범한] 능력과 학식으로 유명했다.
+속담 | 고기도 먹어 본 사람이 많이 먹는다 | 무슨 일이든지 늘 하던 사람이 더 잘한다는 말 | [고기도 먹어 본 사람이 많이 먹는다]고, 평소에 해봤으니 네가 더 잘하겠지.
+낱말 | 개척민 | 어떤 지역을 개척하기 위하여 이주한 사람 | 신대륙에 도착한 [개척민]들은 첫 추수를 기념하였다.
+낱말 | 영유권 | 일정한 영토에 대한 해당 국가의 관할권 | 독도의 [영유권]은 온전히 대한민국에 있다.
+낱말 | 흑연 | 순수한 탄소로 이루어진 광물의 하나. 연필심의 재료 | [흑연]과 다이아몬드는 둘 다 탄소로 이루어져 있다.
+낱말 | 후학 | 학문에서의 후배 | 스승님은 벼슬자리를 마다하시고 [후학]을 양성하러 시골로 내려가셨더랬지.
+낱말 | 문하생 | 스승의 아래에서 가르침을 배우는 제자 | 나는 김 화백의 아래에서 [문하생]으로 오래도록 있었다.
+사자성어 | 남녀노소 | 남자와 여자, 늙은이와 젊은이란 뜻으로, 모든 사람을 이르는 말 | 해가 떠오르자 [남녀노소] 새로운 해에 대한 기대감으로 소원을 빌었다.
+낱말 | 고착 | 어떤 상황이나 현상이 굳어져 변하지 않음 | 전쟁이 [고착] 상태에 들어가자 연합군은 휴전을 제의하였다.
+낱말 | 유원지 | 돌아다니며 구경하거나 놀기 위해 여러 가지 설비를 갖춘 곳 | 우리 가족은 방학 첫날 [유원지]에 가기로 약속했다.
+낱말 | 대선 | 대통령을 뽑는 선거 | [대선]이 며칠 앞으로 다가오자 각 진영의 선거운동은 더욱 거세졌다.
+낱말 | 하소연 | 억울한 일이나 잘못된 일, 딱한 사정 따위를 말함 | 억울한 백성들은 임금에게 사정을 [하소연]하기 위하여 신문고를 찾았다.
+낱말 | 배선 | 전력을 쓰기 위하여, 전기 장치를 전선으로 연결하는 일 | 누전을 방지하려면 [배선] 상태를 자주 점검해야 한다.
+관용어 | 빛을 발하다 | 제 능력이나 값어치를 드러내다 | 뒤늦게 배운 노래였지만 그녀는 무대에서 제대로 [빛을 발했다].
+낱말 | 장의사 | 장례에 필요한 여러 일을 전문적으로 돕는 사람 | 사망 후 당사자의 SNS 기록을 지워주는 디지털 [장의사]라는 직업이 있다.
+낱말 | 서평 | 책의 내용에 대한 평 | 이번 신간에 대한 [서평]은 굉장히 호의적이었다.
+낱말 | 사원 | 종교를 믿는 신자들이 모여 예배 등을 하는 집 | 이슬람 신자들은 일정한 시간이 되면 [사원]이 있는 쪽으로 절을 한다.
+낱말 | 건기 | 일 년 중 비가 적게 내려 건조한 시기 | 케냐의 [건기]는 6월과 10월로 밤에 매우 추워 위험하다.
+낱말 | 우기 | 일 년 중 비가 많이 와 습한 시기 | 아프리카의 [우기]가 지나면 동물들이 서식지를 옮긴다.
+사자성어 | 반신반의 | 얼마쯤 믿으면서도 한편으로는 의심함 | 그 말에 그녀는 [반신반의]하며 일이 어련히 알아서 잘됐겠거니 고개를 끄덕였다.
+낱말 | 해발 | 해수면으로부터 계산하여 잰 육지나 산의 높이 | 에베레스트는 [해발]고도가 세계에서 가장 높은 산이다.
+낱말 | 영구 | 어떤 상태가 시간상으로 무한히 이어짐 | [영구]적으로 인간이 죽지 않고 살 수는 없다.
+낱말 | 유목 | 일정한 거처 없이 목축을 하며 돌아다니는 생활 | 몽골 사람들은 [유목] 생활을 하면서 가축을 키운다.
+낱말 | 화첩 | 그림을 모아 엮은 책 | 미술관에서 김홍도의 [화첩]을 비롯한 다양한 작품을 전시하였다.
+낱말 | 전열 | 전기 에너지를 열에너지로 변환시켰을 때 발생하는 열 | 전기장판과 난로 등은 [전열]기구 중 하나이다.
+속담 | 풀을 베려면 그 뿌리를 베라 | 나쁜 일을 없애려면 그것이 생기는 원인을 없애야 함 | [풀을 베려면 그 뿌리를 베라] 하였으니 원인을 철저하게 조사해 없애야 할 것이다.
+낱말 | 탄식 | 한탄하여 한숨을 쉼. 또는 그 한숨 | 외적들이 우리나라를 호시탐탐 노리고 있으니 [탄식]밖에 나오지 않는구려.
+낱말 | 불경하다 | 경의를 표해야 할 자리에서 무례하다 | 감히 임금의 말에 토를 달다니, [불경한] 놈이로고.
+낱말 | 환희 | 매우 기뻐함. 또는 큰 기쁨 | 전쟁이 끝났다는 소식을 들은 사람들은 [환희]에 차서 서로를 얼싸안았다.
+낱말 | 백엽상 | 기상 관측용 기구가 든 조그만 집 모양의 흰색 나무 상자 | [백엽상] 안에는 온도계와 습도계 등이 설치되어 있다.
+낱말 | 손사랫짓 | 손을 펴서 함부로 휘젓는 짓 | 그는 절대 자신이 한 일이 아니라며 [손사랫짓]을 쳤다.
+사자성어 | 물심양면 | 물질적인 것과 정신적인 것의 두 방면 | 내가 힘닿는 데까지 [물심양면]으로 도울 테니 걱정하지 마라.
+낱말 | 유등 | 기름으로 켜는 등불 | 지금은 보기 힘든 물건 중에는 [유등]이 있다.
+낱말 | 구정물 | 무엇을 씻거나 빨거나 하여 더러워진 물 | 어머니께서 걸레를 빨고 난 다음 남은 [구정물]을 버리셨다.
+낱말 | 바지랑대 | 빨랫줄을 받치는 긴 막대기 | [바지랑대]를 튼튼히 세워야 나중에 빨래가 땅에 떨어지지 않아.
+낱말 | 비옥하다 | 땅이 양분이 많아 기름지다 | [비옥한] 토양에서 자라난 채소들은 영양분이 풍부하다.
+낱말 | 원유 | 땅속에서 뽑아낸, 정제하지 아니한 그대로의 기름 | 우리나라는 [원유]가 나지 않으므로 대부분의 수입을 중동에 의존하고 있다.
+관용어 | 선을 긋다 | 한계나 허용 범위를 정하다 | 거기까지만 말하라고 단호하게 [선을 긋자] 그는 무안한 듯 물러섰다.
+낱말 | 고동치다 | 희망이나 이상이 가득 차 가슴이 뛰다 | 해가 점점 바다 위로 떠오르자 마음이 [고동쳤다].
+낱말 | 공모 | 일반에게 널리 공개하여 모집함 | 광고를 통해 새로운 건물의 이름을 [공모]하고자 합니다.
+낱말 | 기자재 | 기계, 기구, 자재 따위를 통틀어 이르는 말 | 촬영에 사용되는 [기자재]는 비싼 것이 대부분이다.
+낱말 | 적선 | 착한 일을 많이 함. 동냥질에 응하는 일을 좋게 이르는 말 | 나리, [적선]하는 셈 치고 이것만 팔아주시면 안 되겠습니까?
+낱말 | 의뢰 | 남에게 부탁함 | 그는 [의뢰]를 받고 무엇이든 해 주는 흥신소를 차렸다.
+사자성어 | 동고동락 | 괴로움도 즐거움도 함께함 | 부부는 어떠한 때에도 [동고동락]하는 사이가 되어야 한다.
+낱말 | 해코지 | 남을 해치고자 하는 짓 | 후에 그자가 원한을 품고 [해코지]할지도 모르니 조심해야 합니다.
+낱말 | 풍랑 | 해상에서 바람이 강하게 불어 일어나는 물결 | [풍랑]이 일기 시작하자 뱃사람들은 수면을 주시했다.
+낱말 | 증폭 | 사물의 범위가 늘어나 커짐. 사물의 범위를 넓혀 크게 함 | 와이파이의 신호가 약할 때는 신호를 [증폭]시킬 수 있는 수신기를 쓴다.
+낱말 | 눈총 | 눈에 독기를 띠며 쏘아보는 시선 | 대낮에 술을 먹고 고함을 지르는 승객이 사람들의 [눈총]을 받았다.
+낱말 | 반색 | 매우 반가워함. 또는 그런 기색 | 그녀는 기다리던 편지가 도착했다는 소식에 [반색]하며 일어섰다.
+속담 | 사또 떠난 뒤에 나팔 분다 | 어떤 일을 할 시기가 지난 뒤에 하는 것을 놀림조로 이르는 말 | [사또 떠난 뒤에 나팔 분다]더니 다 지나서 뒷북치지 마라.
+낱말 | 질색 | 몹시 싫어하거나 꺼림 | 선생님은 쥐라면 [질색]하시니 절대 그 얘기는 꺼내지 마.
+낱말 | 비방 | 남을 비웃고 헐뜯어서 말함 | 남을 [비방]하는 것과 비판하는 것을 구별할 필요가 있다.
+낱말 | 각광 | 사회적 관심이나 흥미 | 요새는 어린 시절의 추억을 떠올리게 하는 것들이 [각광]받고 있다.
+낱말 | 반박 | 어떤 의견, 주장, 논설 따위에 반대하여 말함 | 검사는 변호사의 말에 조목조목 [반박]하며 주장을 이어 나갔다.
+낱말 | 언약 | 말로 약속함. 또는 그런 약속 | 그 연인들은 전쟁이 끝나면 다시 만나기를 [언약]하고 헤어졌다.
+사자성어 | 난공불락 | 공격하기가 어려워 쉽사리 함락되지 아니함 | 성을 포위하고 며칠을 공격하여도 [난공불락]이니 이를 어찌하면 좋겠습니까?
+낱말 | 대안 | 어떤 일에 대처할 방안 | 정부는 인구 감소 문제에 대한 [대안]을 내놓았다.
+낱말 | 위화감 | 조화되지 아니하는 어설픈 느낌 | 심각한 빈부 격차는 사람들 사이에 [위화감]을 불러일으킨다.
+낱말 | 이바지 | 도움이 되게 함 | 나라를 지키는 데 [이바지]한 사람들을 정부에서 대우해주어야 한다.
+낱말 | 친분 | 아주 가깝고 두터운 정 | 아버지와 [친분]이 있는 철물점 아저씨께서 달려와 나를 도와주셨다.
+낱말 | 학살 | 가혹하게 마구 죽임 | 나치 정권은 유대인들을 수용소에 가두고 마구 [학살]했다.
+관용어 | 고배를 마시다 | 패배, 실패 따위의 쓰라린 일을 당하다 | 주전 선수를 뽑는 경기에서 몇 번이고 [고배를 마셨지만] 그는 포기하지 않았다.
+낱말 | 잔재 | 과거의 낡은 사고방식이나 생활 양식의 찌꺼기 | 우리말에 남아있는 일본어의 [잔재]를 몰아내야 한다.
+낱말 | 면제 | 책임이나 의무 따위를 면하여 줌 | 장애인이나 노인은 대중교통을 이용할 때 요금 [면제] 혜택을 받을 수 있다.
+낱말 | 주력 | 어떤 일에 온 힘을 기울임 | 올해 정부는 기후 위기를 해결하는 데 [주력]하였다.
+낱말 | 단련 | 몸과 마음을 굳세게 함 | 끊임없는 [단련]으로 인하여 그의 무술 실력은 갈수록 뛰어나게 되었다.
+낱말 | 찰기 | 곡식이나 그로 만든 음식 따위의 끈기 있는 성질이나 기운 | 그릇에 담긴 밥이 [찰기]가 있고 윤기가 나 먹음직스러워 보인다.
+사자성어 | 금시초문 | 바로 지금 처음으로 들음 | 무슨 소리십니까? 제가 물건을 훔쳤다니, [금시초문]입니다!
+낱말 | 정변 | 혁명 등의 비합법적인 수단으로 생긴 정치상의 큰 변동 | 박정희 대통령은 자신을 지지하는 세력을 데리고 [정변]을 일으켰다.
+낱말 | 자금 | 사업을 경영하는 데에 쓰는 돈. 특정한 목적에 쓰는 돈 | 대한민국 임시정부는 독립 [자금]을 구하기 위해 비밀리에 연락을 넣었다.
+낱말 | 열풍 | 매우 세차게 일어나는 기운, 기세를 비유적으로 이르는 말 | 요새는 MBTI 테스트로 성격을 설명하는 것이 [열풍]이다.
+낱말 | 망명 | 정치적인 이유로 박해를 받은 사람이 다른 나라로 도망함 | 김구는 일제의 압박을 피하여 중국으로 [망명]하였다.
+낱말 | 원흉 | 못된 짓을 한 사람들의 우두머리 | 안중근이 사살한 이토 히로부미는 민족의 원수이자 [원흉]이었다.
+속담 | 물이 깊어야 고기가 모인다 | 자기에게 덕이 있어야 사람들이 따르게 됨 | [물이 깊어야 고기가 모인다]고, 사람들을 억지로 따르게 하지 말고 덕을 쌓아라.
+낱말 | 기단 | 넓은 지역에 걸쳐 있는 비슷한 성질을 가진 공기 덩어리 | 북태평양 [기단]은 소나기를 몰고 오는 등 여름 날씨에 영향을 미친다.
+낱말 | 은신 | 몸을 숨김 | 암살자는 임무를 성공적으로 수행하기 위해 [은신]에 능해야 한다.
+낱말 | 의거 | 정의를 위하여 개인이나 집단이 의로운 일을 도모함 | 의열단은 조국을 위하여 일본의 주요 인사들을 암살하는 [의거]를 벌였다.
+낱말 | 도모 | 어떤 일을 이루기 위하여 대책과 방법을 세움 | 직원 간의 친목을 [도모]하기 위해 어떤 행사를 해야 할까?
+낱말 | 청산 | 과거의 부정적 요소를 깨끗이 씻어 버림 | 장 발장은 죄수였던 과거를 [청산]하고 새로운 사람으로 태어났다.
+사자성어 | 구밀복검 | 말로는 친한 듯하나 속으로는 해칠 생각이 있음 | 달콤한 말을 하는 사람은 실은 [구밀복검]일 가능성이 높으니 경계해라.
+낱말 | 내전 | 한 나라 안에서 일어나는 싸움 | 아프리카의 많은 나라들은 [내전]에 소년병을 동원하고 있다.
+낱말 | 연소 | 물질이 산소와 화합할 때에, 많은 빛과 열을 내는 현상 | 물질이 [연소]하기 위해서는 산소가 필수적이다.
+낱말 | 실태 | 있는 그대로의 상태. 또는 실제의 모양 | 기자는 원산지를 속인 식품이 유통되는 [실태]를 상세히 조사했다.
+낱말 | 속박 | 어떤 행위 등을 하지 못하도록 강압적으로 얽매거나 제한함 | 광복으로 우리나라는 드디어 일본의 [속박]에서 벗어났다.
+낱말 | 막막하다 | 아주 넓거나 멀어 아득하다 | 안개가 끼자 사방이 [막막하여] 방향을 분간할 수 없었다.
+관용어 | 눈에 쌍심지를 켜다 | 몹시 화가 나서 눈을 부릅뜨다 | 가족에 대한 욕설을 듣자 그녀는 [눈에 쌍심지를 켜고] 덤벼들었다.
+낱말 | 개항 | 항구를 개방하여 외국 선박의 출입을 허가하고 통상함 | 조선의 [개항] 이후 많은 외국 문물이 들어왔다.
+낱말 | 구축 | 어떤 시설물을 쌓아 올려 만듦 | 수원 화성의 [구축]은 정약용의 거중기가 낳은 업적이다.
+낱말 | 반격 | 되받아 공격함 | 인천상륙작전으로 연합군과 국군은 기세를 잡고 [반격]하기 시작했다.
+낱말 | 우롱하다 | 사람을 어리석게 보고 함부로 대하거나 웃음거리로 만들다 | 감히 거짓말로 나를 [우롱]하다니, 죽음으로 값을 치르렷다!
+낱말 | 신상 | 한 사람의 몸이나 처신, 또는 그의 주변에 관한 일이나 형편 | 사람의 [신상]을 파헤치고 함부로 게시하는 것은 법에 위배될 수 있다.
+사자성어 | 대대손손 | 오래도록 내려오는 여러 대 | 그 보물은 우리 집에서 [대대손손] 내려오는 것이다.
+낱말 | 연안 | 육지와 면한 바다·강·호수 따위의 물가 | [연안]에서 물고기들이 뛰노는 것을 볼 수 있었다.
+낱말 | 소각 | 불에 태워 없애 버림 | 쓰레기를 매립, [소각]하는 것은 근본적인 해결책이 될 수 없다.
+낱말 | 아리다 | 상처나 살갗 따위가 찌르는 듯이 아프다 | 달리기를 마치고 나서야 아까 넘어져 까진 무릎이 [아려왔다].
+낱말 | 거무튀튀하다 | 너저분해 보일 정도로 탁하게 거무스름하다 | [거무튀튀한] 벽지며 곰팡이가 슨 바닥 등 오랫동안 버려진 듯한 집이었다.
+낱말 | 평원 | 평평한 들판 | 길을 따라 말을 달리자 [평원]의 풍경이 옆을 스쳐 갔다.
+속담 | 눈 감으면 코 베어 먹을 세상 | 한눈을 판 사이에 큰 피해를 당할 만큼 세상의 인심이 야박하다 | 보이스피싱 피해가 날로 커지고 있다는군. 정말 [눈 감으면 코 베어 먹을 세상]이야.
+낱말 | 정제 | 물질에 섞인 불순물을 없애 그 물질을 더 순수하게 함 | 석유를 [정제]할 때 아스팔트를 얻을 수 있다.
+낱말 | 공유 | 두 사람 이상이 한 물건을 공동으로 소유함 | 다른 사람들과 같이 [공유]하는 물건은 함부로 망가뜨려서는 안 된다.
+낱말 | 안전핀 | 포탄이나 폭발물이 함부로 터지지 아니하도록 꽂는 핀 | 그는 수류탄의 [안전핀]을 뽑아서 던지고 얼른 참호에 숨었다.
+낱말 | 의약 | 의술과 약을 아울러 이르는 말 | 함부로 [의약]을 쓰지 말고 전문가의 결정에 따라라.
+낱말 | 노숙 | 건물이나 집의 바깥 등에서 자는 잠 | 그는 중간중간 [노숙]도 해 가면서 결국 전국 일주를 이루었다.
+사자성어 | 무아지경 | 정신이 한곳에 온통 쏠려 자신조차 잊고 있는 경지 | 그는 한번 책을 읽으면 [무아지경]이라 누가 부르는 소리도 듣지 못하곤 했다.
+낱말 | 기껍다 | 마음속으로 은근히 기쁘다 | 목적이 이루어지자 그는 [기꺼운] 마음으로 다음 일을 계획했다.
+낱말 | 행장 | 여행할 때 쓰는 물건과 차림 | [행장]에 구운 떡과 육포, 입을 옷 등을 넣어놓았다.
+낱말 | 부임 | 임명이나 발령을 받아 근무할 곳으로 감 | 그는 흉흉한 소문이 돌아 아무도 가지 않으려던 철원 부사로 [부임]하였다.
+낱말 | 혼절하다 | 정신이 아찔하여 까무러치다 | 아들의 죽음을 들은 김 할머니는 그만 [혼절하고] 말았다.
+낱말 | 투박하다 | 말이나 행동 따위가 거칠고 세련되지 못하다 | 옹기는 [투박한] 모양과 색이지만 뛰어난 기능을 가졌다.
+관용어 | 사족을 못 쓰다 | 무슨 일에 반하거나 혹하여 꼼짝하지 못하다 | 내 친구는 그저 야구라고는 [사족을 못 써] 경기를 놓치는 법이 없다.
+낱말 | 펠트 | 양털이나 짐승의 털에 습기·열·압력을 가하여 만든 천 | 양모 [펠트]는 집에서 할 수 있는 취미 활동 중 하나다.
+낱말 | 수효 | 낱낱의 수 | [수효]를 셀 수 없을 정도의 적이 새까맣게 몰려오기 시작했다.
+낱말 | 감축 | 덜어서 줄임 | 지구온난화를 막기 위한 탄소 배출 [감축]안이 제정되었다.
+낱말 | 매캐하다 | 연기나 곰팡이 따위의 냄새가 약간 맵고 싸하다 | 어디에서 불이 났는지 [매캐한] 연기가 스며들어왔다.
+낱말 | 감지 | 느끼어 앎 | 자동문에 달린 센서는 사람을 자동으로 [감지]하여 문을 열어준다.
+사자성어 | 대서특필 | 신문 따위의 출판물에서 어떤 기사에 큰 비중을 두어 다룸 | 언론들은 앞다투어 대통령의 발표를 [대서특필]하여 실었다.`;
+
+const KEY = "korean-cloze-quiz-v1";
+const $ = id => document.getElementById(id);
+function load(){ try{ return localStorage.getItem(KEY) || SAMPLE }catch(e){ return SAMPLE } }
+function store(t){ try{ localStorage.setItem(KEY,t) }catch(e){} }
+
+function parse(text){
+  const out = [];
+  text.split(/\r?\n/).forEach(l=>{
+    const p = l.split("|").map(s=>s.trim());
+    if(p.length < 4) return;
+    const [kind, word, mean] = p, sent = p.slice(3).join("|");
+    const m = sent.match(/^(.*?)\[(.+?)\](.*)$/);
+    if(!m || !word) return;
+    const k = ["속담","관용어","사자성어"].includes(kind) ? kind : "낱말";
+    // distractor group: 사자성어, 속담·관용어, 활용형(비범한·고동쳤다), 명사
+    let g = k==="사자성어" ? "4" : k==="낱말" ? "n" : "p";
+    if(k==="낱말" && m[2]!==word && /다$/.test(word) && !word.startsWith(m[2])) g = "v";
+    out.push({kind:k, word, mean, pre:m[1], ans:m[2], post:m[3], g});
+  });
+  return out;
+}
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]} return a };
+const norm = s => s.replace(/[\s.,!?'"“”‘’]/g,"");
+
+let items = parse(load()), type = "mc", queue = [], idx = 0, score = 0, wrong = [], answered = false;
+const SET = 20, STATUS_KEY = "korean-cloze-status-v1";
+const CATS = {word:["낱말"], phrase:["속담","관용어"], four:["사자성어"]};
+let cat = "word", unitIdx = 0, isRetry = false;
+let status = (()=>{ try{ return JSON.parse(localStorage.getItem(STATUS_KEY)) || {} }catch(e){ return {} } })();
+function saveStatus(){ try{ localStorage.setItem(STATUS_KEY, JSON.stringify(status)) }catch(e){} }
+
+function catItems(c){ return items.filter(w => CATS[c].includes(w.kind)) }
+function wordSets(){ const w = catItems("word"), s = []; for(let i=0;i<w.length;i+=SET) s.push(w.slice(i,i+SET)); return s }
+function unitKey(){ return cat==="word" ? "word-"+(unitIdx+1) : cat }
+function unitItems(){ return cat==="word" ? (wordSets()[unitIdx] || []) : catItems(cat) }
+function unitLabel(){ return cat==="word" ? `어휘 ${unitIdx+1}회` : cat==="phrase" ? "속담·관용어" : "사자성어" }
+function fmtDate(d){ const t = new Date(d); return `${t.getMonth()+1}/${t.getDate()}` }
+function stText(st){ return st ? `✓ ${st.s}/${st.t} · ${fmtDate(st.d)}` : "안 봄" }
+
+function renderControls(){
+  const sets = wordSets();
+  if(unitIdx >= sets.length) unitIdx = Math.max(0, sets.length-1);
+  ["word","phrase","four"].forEach(c=>{
+    const b = $("k-"+c); b.setAttribute("aria-pressed", c===cat);
+    const n = catItems(c).length, sp = $("k-"+c+"-n");
+    if(c==="word"){
+      const done = sets.filter((_,i)=>status["word-"+(i+1)]).length;
+      sp.textContent = `${n}문제 · ${done}/${sets.length}회 완료`;
+      sp.className = done===sets.length && sets.length ? "done" : "";
+    } else {
+      const st = status[c]; sp.textContent = `${n}문제 · ${st ? stText(st) : "안 봄"}`; sp.className = st ? "done" : "";
+    }
+  });
+  const box = $("units"); box.hidden = cat!=="word"; box.innerHTML = "";
+  sets.forEach((s,i)=>{
+    const st = status["word-"+(i+1)], b = document.createElement("button");
+    b.id = "u-"+(i+1); b.setAttribute("aria-pressed", i===unitIdx);
+    const t = document.createElement("b"); t.textContent = `${i+1}회`;
+    const r = document.createElement("small"); r.textContent = `${i*SET+1}–${i*SET+s.length}번`;
+    const e = document.createElement("em"); e.className = "st" + (st ? " done" : ""); e.textContent = st ? `✓ ${st.s}/${st.t}` : "안 봄";
+    b.title = st ? `${fmtDate(st.d)}에 봄 · ${st.s}/${st.t}` : "아직 안 봄";
+    b.append(t,r,e); b.onclick = () => { unitIdx = i; renderControls(); start() };
+    box.appendChild(b);
+  });
+}
+
+function start(p){
+  const pool = p || unitItems();
+  if(!pool.length) return;
+  isRetry = !!p;
+  queue = shuffle(pool);
+  idx = 0; score = 0; wrong = [];
+  $("quiz").hidden = false; $("result").hidden = true;
+  show();
+}
+function renderSentence(q, filled){
+  const s = $("sentence"); s.textContent = "";
+  s.append(q.pre);
+  const b = document.createElement("span"); b.className = "blank" + (filled ? " filled" : "");
+  b.textContent = filled ? q.ans : " "; s.append(b, q.post);
+}
+function show(){
+  answered = false;
+  const q = queue[idx];
+  $("count").textContent = `${unitLabel()}${isRetry ? " 오답" : ""} · ${idx+1} / ${queue.length}`;
+  $("score").textContent = `정답 ${score}`;
+  $("bar").style.width = (idx/queue.length*100)+"%";
+  $("tag").textContent = q.kind==="낱말" ? "어휘" : q.kind;
+  renderSentence(q, false);
+  $("hint").textContent = q.mean; $("hint").hidden = true; $("hintbtn").hidden = false;
+  $("feedback").textContent = ""; $("feedback").className = "feedback"; $("next").hidden = true;
+  const ol = $("choices"); ol.innerHTML = "";
+  if(type === "mc"){
+    ol.hidden = false; $("typing").hidden = true;
+    const used = new Set([q.ans]);
+    let pool = shuffle(items.filter(w=>w!==q && w.g===q.g));
+    if(pool.length < 3) pool = pool.concat(shuffle(items.filter(w=>w!==q && w.g!==q.g)));
+    const opts = [q];
+    for(const w of pool){ if(opts.length===4) break; if(!used.has(w.ans)){ used.add(w.ans); opts.push(w) } }
+    shuffle(opts).forEach((o,i)=>{
+      const li = document.createElement("li"), b = document.createElement("button");
+      b.id = "c"+i; b.dataset.ok = o===q ? "1" : "";
+      const k = document.createElement("kbd"); k.textContent = i+1;
+      const t = document.createElement("span"); t.textContent = o.ans;
+      b.append(k,t); b.onclick = () => pickMC(b);
+      li.appendChild(b); ol.appendChild(li);
+    });
+  } else {
+    ol.hidden = true; $("typing").hidden = false;
+    const inp = $("answer"); inp.value = ""; inp.className = ""; inp.disabled = false; $("check").disabled = false;
+    inp.focus({preventScroll:true});
+  }
+}
+function settle(ok){
+  answered = true;
+  const q = queue[idx], f = $("feedback");
+  renderSentence(q, true);
+  $("hint").hidden = false; $("hintbtn").hidden = true;
+  if(ok){ score++; f.className = "feedback ok"; f.textContent = "정답!" }
+  else {
+    wrong.push(q); f.className = "feedback no"; f.textContent = `정답은 ‘${q.ans}’`;
+    const sm = document.createElement("small"); sm.textContent = `표제어: ${q.word}`; f.appendChild(sm);
+  }
+  $("score").textContent = `정답 ${score}`;
+  const n = $("next"); n.textContent = idx===queue.length-1 ? "결과 보기 →" : "다음 →"; n.hidden = false; n.focus();
+}
+function pickMC(b){
+  if(answered) return;
+  [...$("choices").querySelectorAll("button")].forEach(x=>{ x.disabled = true; if(x.dataset.ok) x.classList.add("right") });
+  if(!b.dataset.ok) b.classList.add("wrong");
+  settle(!!b.dataset.ok);
+}
+$("typing").addEventListener("submit", e=>{
+  e.preventDefault(); if(answered) return;
+  const inp = $("answer"), v = inp.value.trim(); if(!v) return;
+  const q = queue[idx], ok = norm(v)===norm(q.ans) || norm(v)===norm(q.word);
+  inp.className = ok ? "right" : "wrong"; inp.disabled = true; $("check").disabled = true;
+  settle(ok);
+});
+function next(){ idx++; idx<queue.length ? show() : finish() }
+function finish(){
+  $("bar").style.width = "100%";
+  $("quiz").hidden = true; $("result").hidden = false;
+  if(!isRetry){ status[unitKey()] = {s:score, t:queue.length, d:Date.now()}; saveStatus(); renderControls() }
+  $("r-score").textContent = `${score} / ${queue.length}`;
+  $("r-mode").textContent = `${unitLabel()}${isRetry ? " 오답" : ""} · ${type==="mc" ? "객관식" : "주관식"}`;
+  const r = score/queue.length;
+  $("r-text").textContent = (r===1 ? "모두 맞혔어요." : r>=.7 ? "잘했어요. 틀린 문제만 한 번 더 풀어 보세요." : "틀린 문제를 다시 풀어 보세요.") + (isRetry ? "" : " 응시 기록을 남겼어요.");
+  const ul = $("r-list"); ul.innerHTML = "";
+  wrong.forEach(w=>{
+    const li = document.createElement("li"), b = document.createElement("b"), d = document.createElement("div");
+    b.textContent = w.word; d.textContent = w.pre + w.ans + w.post;
+    li.append(b, document.createTextNode(` · ${w.mean}`), d); ul.appendChild(li);
+  });
+  $("retry-wrong").hidden = wrong.length===0;
+  const nu = $("next-unit"), sets = wordSets();
+  nu.hidden = !(cat==="word" && unitIdx < sets.length-1);
+  if(!nu.hidden) nu.textContent = `어휘 ${unitIdx+2}회 보기 →`;
+}
+function press(groupIds, on){ groupIds.forEach(id=>$(id).setAttribute("aria-pressed", id===on)) }
+
+["word","phrase","four"].forEach(c=>{ $("k-"+c).onclick = () => { cat = c; renderControls(); start() } });
+$("t-mc").onclick = () => { type="mc"; press(["t-mc","t-sa"],"t-mc"); start() };
+$("t-sa").onclick = () => { type="sa"; press(["t-mc","t-sa"],"t-sa"); start() };
+$("hintbtn").onclick = () => { $("hint").hidden = false; $("hintbtn").hidden = true };
+$("next").onclick = next;
+$("restart").onclick = () => start();
+$("next-unit").onclick = () => { unitIdx++; renderControls(); start() };
+$("retry-wrong").onclick = () => start(wrong);
+let clearArmed = false;
+$("clear-status").onclick = () => {
+  const b = $("clear-status");
+  if(!clearArmed){ clearArmed = true; b.textContent = "한 번 더 누르면 지워져요"; setTimeout(()=>{ clearArmed=false; b.textContent="응시 기록 지우기" }, 4000); return }
+  clearArmed = false; status = {}; saveStatus(); renderControls(); b.textContent = "응시 기록 지우기";
+  $("msg").textContent = "응시 기록을 지웠어요"; $("msg").className = "msg";
+};
+$("save").onclick = () => {
+  const list = parse($("words").value), msg = $("msg");
+  if(list.length < 4){ msg.textContent = `읽을 수 있는 문제가 ${list.length}개예요. 형식을 확인하고 4개 이상 적어 주세요.`; msg.className="msg err"; return }
+  items = list; store($("words").value); msg.textContent = `${list.length}문제 저장됨`; msg.className="msg"; renderControls(); start();
+};
+$("reset").onclick = () => { $("words").value = SAMPLE; $("save").onclick() };
+document.addEventListener("keydown", e=>{
+  if(e.target.tagName==="TEXTAREA" || e.target.tagName==="INPUT" || $("quiz").hidden) return;
+  if(!answered && type==="mc" && /^[1-4]$/.test(e.key)){ const b=$("c"+(e.key-1)); if(b) b.click() }
+  else if(answered && e.key==="Enter" && document.activeElement!==$("next")) next();
+});
+
+$("words").value = load();
+if(items.length < 4) items = parse(SAMPLE);
+renderControls();
+start();
+</script>
+</body>
+</html>
